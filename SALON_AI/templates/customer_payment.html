@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block head_styles %}
+<style>
+  .payment-page { max-width: 880px; margin: 0 auto; color: #211b3a; }
+  .payment-hero { padding: 22px 26px; border-radius: 20px; color: #fff; background: linear-gradient(120deg, #2563eb, #6d28d9 58%, #be185d); box-shadow: 0 14px 32px rgba(91,33,182,.17); }
+  .payment-panel { padding: 24px; border: 1px solid #eee7fa; border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 10px 28px rgba(49,46,129,.06); }
+  .qr-image { width: min(260px, 100%); height: auto; border: 1px solid #eee; border-radius: 14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-page">
+  <header class="payment-hero mb-4"><div class="small text-white-50 text-uppercase fw-semibold">Xác nhận lịch hẹn #{{ appointment.id }}</div><h1 class="h3 mb-1 mt-1">Chọn phương thức thanh toán</h1><div class="text-white-75">{{ appointment.appointment_date }} · {{ appointment.start_time }} · {{ appointment.stylist_name }}</div></header>
+  <section class="payment-panel mb-4">
+    <div class="d-flex justify-content-between gap-3"><div><div class="small text-secondary">Dịch vụ</div><div class="fw-semibold">{{ appointment.service_names }}</div></div><div class="text-end"><div class="small text-secondary">Tổng tiền</div><div class="h4 text-primary">{{ "{:,.0f}".format(appointment.amount) }} ₫</div></div></div>
+    <hr>
+    <div class="d-flex align-items-center justify-content-between"><span>Trạng thái lịch</span><span class="badge text-bg-warning">{{ appointment.status }}</span></div>
+    <div class="d-flex align-items-center justify-content-between mt-2"><span>Trạng thái thanh toán</span><span class="badge text-bg-secondary">{{ appointment.payment_status }}</span></div>
+  </section>
+
+  <section class="payment-panel mb-4">
+    <h2 class="h5 mb-3">Phương thức thanh toán</h2>
+    <div class="d-grid gap-2">
+      <form method="post"><input type="hidden" name="payment_method" value="Salon"><button class="btn btn-outline-primary text-start p-3" type="submit"><strong>Thanh toán tại Salon</strong><span class="d-block small text-secondary">Tiền mặt hoặc thẻ khi đến làm dịch vụ</span></button></form>
+      <form method="post"><input type="hidden" name="payment_method" value="VietQR"><button class="btn btn-outline-primary text-start p-3" type="submit"><strong>Thanh toán Online · VietQR</strong><span class="d-block small text-secondary">Quét mã chuyển khoản theo đúng số tiền lịch hẹn</span></button></form>
+      {% if momo_enabled %}<form method="post"><input type="hidden" name="payment_method" value="MoMo"><button class="btn btn-outline-primary text-start p-3" type="submit"><strong>Thanh toán Online · MoMo</strong><span class="d-block small text-secondary">Tạo mã QR theo cấu hình MoMo của salon</span></button></form>{% else %}<button class="btn btn-outline-secondary text-start p-3" type="button" disabled><strong>Thanh toán Online · MoMo</strong><span class="d-block small">Chưa cấu hình MOMO_PAYMENT_URL_TEMPLATE</span></button>{% endif %}
+    </div>
+  </section>
+
+  {% if method == 'VietQR' %}
+    <section class="payment-panel text-center mb-4">
+      <h2 class="h5">Quét mã VietQR để thanh toán</h2>
+      {% if vietqr_url %}
+        <img class="qr-image my-3" src="{{ vietqr_url }}" alt="Mã VietQR thanh toán lịch hẹn {{ appointment.id }}">
+        <p class="mb-1">Số tiền: <strong>{{ "{:,.0f}".format(appointment.amount) }} ₫</strong></p>
+        <p class="text-secondary">Nội dung chuyển khoản: <strong>Salon AI {{ appointment.id }}</strong></p>
+      {% else %}
+        <div class="alert alert-warning mt-3 mb-0">Chưa cấu hình tài khoản nhận tiền. Hãy đặt VIETQR_BANK_ID và VIETQR_ACCOUNT_NO trong môi trường ứng dụng.</div>
+      {% endif %}
+      <div class="small text-secondary mt-3">Thanh toán đang ở trạng thái Unpaid cho đến khi giao dịch được đối soát.</div>
+    </section>
+  {% elif method == 'MoMo' %}
+    <section class="payment-panel text-center mb-4">
+      <h2 class="h5">Quét mã MoMo</h2>
+      {% if momo_qr_url %}<img class="qr-image my-3" src="{{ momo_qr_url }}" alt="Mã QR MoMo lịch hẹn {{ appointment.id }}"><p>Số tiền: <strong>{{ "{:,.0f}".format(appointment.amount) }} ₫</strong></p><p class="text-secondary">Mã giao dịch: <strong>Salon AI {{ appointment.id }}</strong></p>{% endif %}
+      <div class="small text-secondary">Trạng thái sẽ là Unpaid cho đến khi nhận được xác nhận giao dịch.</div>
+    </section>
+  {% elif method == 'Salon' %}
+    <section class="payment-panel mb-4"><div class="alert alert-info mb-0">Bạn sẽ thanh toán tại Salon bằng tiền mặt hoặc thẻ. Lịch hẹn đã được ghi nhận.</div></section>
+  {% endif %}
+
+  <div class="d-flex justify-content-between"><a class="btn btn-outline-secondary rounded-pill" href="{{ url_for('customer_booking') }}">Đặt lịch khác</a><a class="btn btn-primary rounded-pill px-4" href="{{ url_for('customer_history') }}">Xem lịch sử đặt lịch</a></div>
+</div>
+{% endblock %}

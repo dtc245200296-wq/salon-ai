@@ -1,0 +1,16 @@
+{% extends 'admin_base.html' %}
+{% block content %}
+<div class="container" style="max-width:760px">
+  <header class="mb-4"><div class="small text-uppercase text-primary fw-semibold">HairStudio · Tài khoản</div><h1 class="h3 mb-1">Hồ sơ cá nhân</h1><p class="text-secondary mb-0">Cập nhật tên hiển thị và mật khẩu đăng nhập.</p></header>
+  <section class="card border-0 shadow-sm p-4">
+    <div class="d-flex align-items-center gap-3 mb-4"><span class="admin-profile-avatar">{{ user.full_name[:1]|upper }}</span><div><div class="fw-bold">{{ user.full_name }}</div><div class="text-secondary small">{{ user.username }} · {{ role_display }}</div></div></div>
+    <form method="post" action="{{ url_for('admin_profile') }}">
+      <div class="mb-3"><label class="form-label" for="profile-full-name">Họ và tên</label><input id="profile-full-name" class="form-control" name="full_name" value="{{ user.full_name }}" required></div>
+      <div class="mb-3"><label class="form-label" for="profile-username">Tên đăng nhập</label><input id="profile-username" class="form-control" value="{{ user.username }}" readonly></div>
+      <hr><h2 class="h6 mb-3">Đổi mật khẩu <span class="text-secondary fw-normal">(để trống nếu không đổi)</span></h2>
+      <div class="row g-3"><div class="col-md-6"><label class="form-label" for="profile-new-password">Mật khẩu mới</label><input id="profile-new-password" class="form-control" type="password" name="new_password" minlength="6" autocomplete="new-password"></div><div class="col-md-6"><label class="form-label" for="profile-confirm-password">Nhập lại mật khẩu mới</label><input id="profile-confirm-password" class="form-control" type="password" name="confirm_password" minlength="6" autocomplete="new-password"></div></div>
+      <div class="d-flex justify-content-end mt-4"><button class="btn btn-primary rounded-pill px-4" type="submit">Lưu thay đổi</button></div>
+    </form>
+  </section>
+</div>
+{% endblock %}

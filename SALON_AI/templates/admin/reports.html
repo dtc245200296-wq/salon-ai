@@ -1,0 +1,49 @@
+{% extends 'admin_base.html' %}
+{% block head_styles %}<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>{% endblock %}
+{% block content %}
+<style>
+  .report-hero{padding:22px 26px;border-radius:20px;color:#fff;background:linear-gradient(120deg,#2563eb,#6d28d9 58%,#be185d)}
+  .report-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0 16px}.report-tab{border:1px solid #e5e0ee;border-radius:999px;padding:9px 16px;background:#fff;color:#514866;font-weight:650}.report-tab.active{border-color:#6d28d9;background:#6d28d9;color:#fff}
+  .report-pane[hidden]{display:none!important}.report-kpi{border:0;box-shadow:0 8px 25px #312e810d}.report-kpi strong{font-size:1.35rem}
+</style>
+<header class="report-hero mb-4"><div class="small text-white-50 text-uppercase fw-semibold">HairStudio · Báo cáo vận hành</div><h1 class="h3 mb-1 mt-1">Báo cáo Thống kê</h1><div class="text-white-75">Doanh số ca, hiệu quả thợ và dự tính lương tháng.</div></header>
+<form method="get" action="{{ url_for('admin_reports') }}" class="d-flex flex-wrap align-items-end gap-2 mb-3"><div><label class="form-label mb-1" for="report-month">Tháng báo cáo</label><input id="report-month" class="form-control" type="month" name="month" value="{{ report.month }}"></div><button class="btn btn-outline-primary" type="submit">Xem tháng</button></form>
+<nav class="report-tabs" aria-label="Các báo cáo"><button type="button" class="report-tab active" data-report-tab="overview">Doanh số &amp; Vận hành</button><button type="button" class="report-tab" data-report-tab="payroll">Báo cáo lương &amp; doanh số thợ</button></nav>
+
+<section class="report-pane" data-report-pane="overview">
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card report-kpi p-3 h-100"><span class="text-secondary">Tổng doanh thu đã thu</span><strong class="text-primary mt-2">{{ report.revenue|vnd }}</strong></div></div>
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card report-kpi p-3 h-100"><span class="text-secondary">Đơn hoàn thành</span><strong class="mt-2">{{ report.completed }}</strong></div></div>
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card report-kpi p-3 h-100"><span class="text-secondary">Doanh thu trung bình</span><strong class="mt-2">{{ report.average|vnd }}</strong></div></div>
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card report-kpi p-3 h-100"><span class="text-secondary">Đơn bị hủy</span><strong class="text-danger mt-2">{{ report.cancelled }}</strong></div></div>
+  </div>
+  <h2 class="h5 mb-3">Thống kê doanh số ca hôm nay</h2>
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-4"><div class="card report-kpi p-3 h-100"><span class="text-secondary">Tiền thu qua VietQR</span><strong class="text-primary mt-2">{{ report.today_vietqr|vnd }}</strong></div></div>
+    <div class="col-12 col-md-4"><div class="card report-kpi p-3 h-100"><span class="text-secondary">Tiền mặt thu tại quầy</span><strong class="mt-2">{{ report.today_cash|vnd }}</strong></div></div>
+    <div class="col-12 col-md-4"><div class="card report-kpi p-3 h-100"><span class="text-secondary">Số đơn hôm nay</span><strong class="mt-2">{{ report.today_orders }}</strong></div></div>
+  </div>
+  <div class="row g-4 mb-4"><div class="col-12 col-xl-7"><section class="card border-0 shadow-sm p-3 h-100"><h3 class="h6">Doanh thu 7 ngày gần nhất</h3><div style="height:300px"><canvas id="dailyRevenueChart" aria-label="Biểu đồ doanh thu 7 ngày" role="img"></canvas></div></section></div><div class="col-12 col-xl-5"><section class="card border-0 shadow-sm p-3 h-100"><h3 class="h6">Doanh thu theo dịch vụ</h3><div style="height:300px"><canvas id="serviceChart" aria-label="Biểu đồ doanh thu theo dịch vụ" role="img"></canvas></div></section></div></div>
+  <section class="card border-0 shadow-sm p-3"><h3 class="h6 mb-3">Dịch vụ đắt khách nhất</h3><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>#</th><th>Dịch vụ</th><th class="text-end">Lượt đặt</th></tr></thead><tbody>{% for s in report.top_services %}<tr><td>{{ loop.index }}</td><td>{{ s.name }}</td><td class="text-end">{{ s.bookings }}</td></tr>{% else %}<tr><td colspan="3" class="text-center text-secondary">Chưa có dữ liệu.</td></tr>{% endfor %}</tbody></table></div></section>
+</section>
+
+<section class="report-pane" data-report-pane="payroll" hidden>
+  <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3"><div><h2 class="h5 mb-1">Báo cáo lương &amp; doanh số thợ</h2><p class="text-secondary mb-0">Doanh số tính từ các ca hoàn thành trong tháng {{ report.month }}. Hoa hồng dự tính theo tỷ lệ cài đặt cho từng thợ.</p></div>{% if report.payroll_closed %}<span class="badge text-bg-success">Đã chốt{% if report.payroll_closed_at %} · {{ report.payroll_closed_at }}{% endif %}</span>{% endif %}</div>
+  {% if session.get('role') == 'admin' %}
+  <div class="row g-3 mb-4"><div class="col-12 col-lg-4"><div class="card border-0 shadow-sm p-3 h-100"><div class="text-secondary">Doanh thu đã thu trong tháng</div><strong class="fs-5 mt-2">{{ report.monthly_revenue|vnd }}</strong><div class="text-secondary mt-3">Chi phí vận hành tháng</div><strong class="fs-5">{{ report.monthly_expense|vnd }}</strong><div class="text-secondary mt-3">Lợi nhuận ròng dự tính</div><strong class="fs-4 text-success">{{ report.net_profit|vnd }}</strong></div></div>
+    <div class="col-12 col-lg-8"><div class="card border-0 shadow-sm p-3 h-100"><h3 class="h6">Cập nhật chi phí vận hành</h3><form class="row g-2 align-items-end" method="post" action="{{ url_for('admin_report_expenses') }}"><input type="hidden" name="month" value="{{ report.month }}"><div class="col-12 col-sm-7"><label class="form-label" for="expense-amount">Tổng chi phí tháng (đ)</label><input id="expense-amount" name="amount" type="number" min="0" step="1000" class="form-control" value="{{ report.monthly_expense }}" required></div><div class="col-12 col-sm-5"><button class="btn btn-outline-primary w-100" type="submit">Lưu chi phí</button></div></form><p class="small text-secondary mt-2 mb-0">Lợi nhuận ròng = doanh thu đã thu trong tháng trừ chi phí được nhập tại đây.</p></div></div>
+  </div>
+  {% endif %}
+  <section class="card border-0 shadow-sm p-3"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Mã NV</th><th>Tên thợ</th><th class="text-end">Ca hoàn thành</th><th class="text-end">Tổng doanh số</th><th class="text-end">Lương cứng</th><th class="text-end">Hoa hồng</th><th class="text-end">Tổng lương dự kiến</th></tr></thead><tbody>
+    {% for s in report.payroll %}<tr><td>#{{ s.barber_id }}</td><td>{{ s.name }}</td><td class="text-end">{{ s.completed }}</td><td class="text-end text-nowrap">{{ s.sales|vnd }}</td><td class="text-end text-nowrap">{{ s.base_salary|vnd }}</td><td class="text-end text-nowrap">{{ '%.1f'|format(s.commission_rate) }}%<div class="small text-secondary">{{ s.commission|vnd }}</div></td><td class="text-end text-nowrap fw-semibold">{{ s.total_salary|vnd }}</td></tr>{% else %}<tr><td colspan="7" class="text-center text-secondary py-4">Chưa có dữ liệu nhân viên.</td></tr>{% endfor %}
+  </tbody></table></div></section>
+  {% if session.get('role') == 'admin' %}<div class="d-flex justify-content-end mt-3">{% if report.payroll_closed %}<button class="btn btn-success" type="button" disabled>Đã chốt lương tháng</button>{% else %}<form method="post" action="{{ url_for('admin_close_payroll') }}" onsubmit="return confirm('Chốt lương tháng {{ report.month }}? Sau khi chốt, bảng lương sẽ được khóa.')"><input type="hidden" name="month" value="{{ report.month }}"><button class="btn btn-primary rounded-pill px-4" type="submit"><i class="bi bi-lock-fill me-1"></i>Quyết toán &amp; Chốt lương tháng</button></form>{% endif %}</div>{% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}<script>
+const dailyLabels={{ report.daily_labels|tojson }},dailyValues={{ report.daily_values|tojson }},serviceLabels={{ report.service_labels|tojson }},serviceValues={{ report.service_values|tojson }};
+new Chart(document.getElementById('dailyRevenueChart'),{type:'line',data:{labels:dailyLabels,datasets:[{label:'Doanh thu (đ)',data:dailyValues,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.15)',fill:true,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>new Intl.NumberFormat('vi-VN').format(v)+' đ'}}}}});
+new Chart(document.getElementById('serviceChart'),{type:'bar',data:{labels:serviceLabels,datasets:[{label:'Doanh thu (đ)',data:serviceValues,backgroundColor:'#8b5cf6',borderRadius:8}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{callback:v=>new Intl.NumberFormat('vi-VN').format(v)+' đ'}}}}});
+document.querySelectorAll('[data-report-tab]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-report-tab]').forEach(tab=>tab.classList.toggle('active',tab===button));document.querySelectorAll('[data-report-pane]').forEach(pane=>pane.hidden=pane.dataset.reportPane!==button.dataset.reportTab)}));
+</script>{% endblock %}

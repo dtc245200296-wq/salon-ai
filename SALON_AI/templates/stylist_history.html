@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block head_styles %}
+<style>
+  .history-shell { color: #211b3a; }
+  .history-hero { padding: 22px 26px; border-radius: 20px; color: #fff; background: linear-gradient(120deg, #2563eb, #6d28d9 58%, #be185d); box-shadow: 0 14px 32px rgba(91,33,182,.17); }
+  .history-panel { padding: 22px; border: 1px solid #eee7fa; border-radius: 18px; background: rgba(255,255,255,.9); box-shadow: 0 10px 28px rgba(49,46,129,.06); }
+  .history-status { display: inline-block; padding: 5px 10px; border-radius: 99px; font-size: .78rem; font-weight: 700; }
+  .history-status.completed { color: #047857; background: #d1fae5; }
+  .history-status.cancelled { color: #b91c1c; background: #fee2e2; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="history-shell">
+  <header class="history-hero mb-4">
+    <div class="small text-white-50 text-uppercase fw-semibold">Stylist</div>
+    <h1 class="h3 mb-1">Lịch sử làm việc</h1>
+    <div class="text-white-75">Các ca đã hoàn thành hoặc đã hủy</div>
+  </header>
+
+  <section class="history-panel">
+    <form class="row g-2 align-items-end mb-4" method="get" action="{{ url_for('stylist_history') }}">
+      <div class="col-12 col-md-4">
+        <label class="form-label" for="date">Lọc theo ngày</label>
+        <input class="form-control" type="date" id="date" name="date" value="{{ selected_date }}">
+      </div>
+      <div class="col-12 col-md-5">
+        <label class="form-label" for="q">Tìm khách hoặc dịch vụ</label>
+        <input class="form-control" type="search" id="q" name="q" value="{{ query }}" placeholder="Tên, số điện thoại, dịch vụ">
+      </div>
+      <div class="col-6 col-md-1 d-grid"><button class="btn btn-primary" type="submit">Lọc</button></div>
+      <div class="col-6 col-md-2 d-grid"><a class="btn btn-outline-secondary" href="{{ url_for('stylist_history') }}">Xóa lọc</a></div>
+    </form>
+
+    {% if appointments %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Ngày / giờ</th><th>Khách hàng</th><th>Dịch vụ</th><th>Ghi chú</th><th>Trạng thái</th><th class="text-end">Giá trị</th></tr></thead>
+          <tbody>
+            {% for item in appointments %}
+              <tr>
+                <td class="text-nowrap">{{ item.appointment_date }}<br><span class="small text-secondary">{{ item.start_time }}{% if item.end_time %} – {{ item.end_time }}{% endif %}</span></td>
+                <td><strong>{{ item.customer_name }}</strong><br><span class="small text-secondary">{{ item.customer_phone or 'Chưa có số điện thoại' }}</span></td>
+                <td>{{ item.service_names or '—' }}</td>
+                <td>{{ item.note or '—' }}</td>
+                <td><span class="history-status {{ item.status|lower }}">{{ item.status }}</span></td>
+                <td class="text-end text-nowrap">{{ "{:,.0f}".format(item.amount) }} ₫</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center text-secondary py-5">Không tìm thấy lịch sử làm việc phù hợp.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

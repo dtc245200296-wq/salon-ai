@@ -1,0 +1,152 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<h2>Chatbot Salon AI</h2>
+<div class="chat-card">
+  <div id="messages" class="messages">
+    <div class="bubble bot">Xin chào! Tôi là Chuyên gia AI của Salon. Bạn có thể hỏi bất kỳ câu hỏi nào về kỹ thuật làm tóc, màu nhuộm, tư vấn kiểu dáng hoặc dịch vụ salon!</div>
+  </div>
+  <div class="chat-input">
+    <!-- Bổ sung sự kiện onkeydown để bắt phím Enter -->
+    <input id="message" class="form-control" placeholder="Nhập câu hỏi..." onkeydown="handleKeyPress(event)">
+    <button class="btn btn-primary" onclick="sendMessage()">Gửi</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let isProcessing = false;
+  // Bắt sự kiện phím Enter
+  function handleKeyPress(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault(); // Tránh reload trang
+      sendMessage();
+    }
+  }
+
+  // Render phản hồi an toàn: không dùng innerHTML, chống tấn công XSS
+  function appendBotMessage(box, rawText, citations) {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble bot';
+
+    // Phân tích định dạng in đậm **...** an toàn bằng DOM node
+    const regex = /\*\*(.*?)\*\*/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(rawText)) !== null) {
+      if (match.index > lastIndex) {
+        bubble.appendChild(document.createTextNode(rawText.substring(lastIndex, match.index)));
+      }
+      const strong = document.createElement('strong');
+      strong.textContent = match[1];
+      bubble.appendChild(strong);
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < rawText.length) {
+      bubble.appendChild(document.createTextNode(rawText.substring(lastIndex)));
+    }
+
+    // Hiển thị nguồn trích dẫn an toàn nếu có (chỉ cho phép giao thức http/https)
+    if (Array.isArray(citations) && citations.length > 0) {
+      const citeDiv = document.createElement('div');
+      citeDiv.className = 'mt-2 pt-1 border-top';
+      const small = document.createElement('small');
+      small.textContent = 'Nguồn: ';
+
+      citations.forEach((item, idx) => {
+        if (idx > 0) {
+          small.appendChild(document.createTextNode(' | '));
+        }
+        const title = item.title || item.url || ('Nguồn ' + (idx + 1));
+        const url = item.url || '';
+        if (/^https?:\/\//i.test(url)) {
+          const a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = title;
+          small.appendChild(a);
+        } else {
+          const span = document.createElement('span');
+          span.textContent = title;
+          small.appendChild(span);
+        }
+      });
+
+      citeDiv.appendChild(small);
+      bubble.appendChild(citeDiv);
+    }
+
+    box.appendChild(bubble);
+  }
+
+  async function sendMessage() {
+    if (isProcessing) return;
+    const input = document.getElementById('message');
+    const msg = input.value.trim();
+    if (!msg) return;
+    isProcessing = true;
+
+    const box = document.getElementById('messages');
+    const sendButton = document.querySelector('.chat-input button');
+    input.disabled = true;
+    if (sendButton) sendButton.disabled = true;
+    
+    // 1. Hiển thị tin nhắn người dùng an toàn bằng textContent (chống XSS)
+    const userBubble = document.createElement('div');
+    userBubble.className = 'bubble user';
+    userBubble.textContent = msg;
+    box.appendChild(userBubble);
+
+    input.value = '';
+    box.scrollTop = box.scrollHeight;
+
+    // 2. Hiển thị bóng tin nhắn chờ phản hồi an toàn
+    const loadingBubble = document.createElement('div');
+    loadingBubble.id = 'ai-thinking-bubble';
+    loadingBubble.className = 'bubble bot ai-thinking-bubble';
+    const em = document.createElement('em');
+    em.textContent = 'Salon AI đang suy nghĩ...';
+    loadingBubble.appendChild(em);
+    box.appendChild(loadingBubble);
+    box.scrollTop = box.scrollHeight;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 35000);
+      const r = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: msg }),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+
+      const d = await r.json();
+      
+      // Xóa bóng tin nhắn chờ
+      loadingBubble.remove();
+
+      const replyText = d.reply || d.error || 'Đã có lỗi xảy ra.';
+      appendBotMessage(box, replyText, d.citations);
+    } catch (err) {
+      loadingBubble.remove();
+      const errBubble = document.createElement('div');
+      errBubble.className = 'bubble bot';
+      errBubble.textContent = '⚠️ Trợ lý phản hồi chậm, bạn hãy gửi lại nhé!';
+      box.appendChild(errBubble);
+    }
+
+    input.disabled = false;
+    if (sendButton) sendButton.disabled = false;
+    isProcessing = false;
+    input.focus();
+    box.scrollTop = box.scrollHeight;
+  }
+</script>
+{% endblock %}

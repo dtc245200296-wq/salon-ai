@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block head_styles %}
+<style>
+  .stylist-page { --ink: #211b3a; --muted: #716b83; --violet: #6d28d9; color: var(--ink); }
+  .stylist-heading { margin-bottom: 22px; }
+  .stylist-heading .eyebrow { color: #6d28d9; font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .glass-panel { border: 1px solid rgba(255,255,255,.82); border-radius: 18px; background: rgba(255,255,255,.86); box-shadow: 0 12px 32px rgba(49,46,129,.07); }
+  .kpi-card { height: 100%; padding: 20px; }
+  .kpi-label { color: var(--muted); font-size: .86rem; }
+  .kpi-value { margin-top: 8px; color: var(--ink); font-size: clamp(1.55rem, 3vw, 2rem); font-weight: 750; line-height: 1.1; }
+  .kpi-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; color: #6d28d9; background: #f3e8ff; font-weight: 800; }
+  .section-panel { padding: 22px; }
+  .filter-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .filter-tab { padding: 8px 14px; border: 1px solid #e9d5ff; border-radius: 999px; color: #5b21b6; background: white; font-size: .9rem; }
+  .filter-tab.active, .filter-tab:hover { border-color: transparent; color: white; background: linear-gradient(90deg, #2563eb, #7c3aed); }
+  .appointment-card { height: 100%; padding: 20px; }
+  .appointment-time { color: var(--violet); font-size: 1.1rem; font-weight: 750; }
+  .meta-label { margin-bottom: 3px; color: #8a8498; font-size: .76rem; letter-spacing: .04em; text-transform: uppercase; }
+  .status-badge { display: inline-flex; padding: 6px 10px; border-radius: 999px; font-size: .78rem; font-weight: 700; white-space: nowrap; }
+  .status-pending { color: #92400e; background: #fef3c7; }
+  .status-confirmed { color: #1d4ed8; background: #dbeafe; }
+  .status-in-progress { color: #6d28d9; background: #ede9fe; }
+  .status-completed { color: #047857; background: #d1fae5; }
+  .status-cancelled { color: #b91c1c; background: #fee2e2; }
+  .notes-box { padding: 10px 12px; border-radius: 12px; color: #51466c; background: #f7f3ff; font-size: .9rem; }
+  .empty-state { padding: 44px 20px; color: var(--muted); text-align: center; }
+  @media (max-width: 768px) { .section-panel { padding: 16px; } .appointment-card { padding: 17px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stylist-page">
+  <div class="stylist-heading d-flex flex-wrap align-items-end justify-content-between gap-2">
+    <div><div class="eyebrow">Khu vực Stylist</div><h1 class="h3 mb-1">Ca làm việc hôm nay</h1><div class="text-secondary">{{ today.strftime('%d/%m/%Y') }} · Xin chào, {{ stylist_name }}</div></div>
+  </div>
+
+  <section class="row g-3 mb-4" aria-label="Thống kê hiệu suất hôm nay">
+    <div class="col-6 col-xl-3"><div class="glass-panel kpi-card"><div class="d-flex justify-content-between align-items-start"><span class="kpi-label">Tổng số ca hôm nay</span><span class="kpi-icon">CA</span></div><div class="kpi-value">{{ stats.total }}</div></div></div>
+    <div class="col-6 col-xl-3"><div class="glass-panel kpi-card"><div class="d-flex justify-content-between align-items-start"><span class="kpi-label">Đang thực hiện</span><span class="kpi-icon">▶</span></div><div class="kpi-value">{{ stats.in_progress }}</div></div></div>
+    <div class="col-6 col-xl-3"><div class="glass-panel kpi-card"><div class="d-flex justify-content-between align-items-start"><span class="kpi-label">Đã hoàn thành</span><span class="kpi-icon">✓</span></div><div class="kpi-value">{{ stats.completed }}</div></div></div>
+    <div class="col-6 col-xl-3"><div class="glass-panel kpi-card"><div class="d-flex justify-content-between align-items-start"><span class="kpi-label">Doanh thu ước tính</span><span class="kpi-icon">₫</span></div><div class="kpi-value">{{ "{:,.0f}".format(stats.revenue) }} <span class="fs-6">₫</span></div></div></div>
+  </section>
+
+  <section class="glass-panel section-panel" id="tasks">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+      <div><h2 class="h5 mb-1">Bảng ca làm việc</h2><div class="text-secondary small">Lịch hẹn được phân công cho bạn trong ngày</div></div>
+      <div class="filter-tabs" role="group" aria-label="Lọc trạng thái lịch hẹn">
+        <button class="filter-tab active" type="button" data-filter="all">Tất cả</button>
+        <button class="filter-tab" type="button" data-filter="pending">Chờ làm</button>
+        <button class="filter-tab" type="button" data-filter="in-progress">Đang làm</button>
+        <button class="filter-tab" type="button" data-filter="completed">Hoàn thành</button>
+      </div>
+    </div>
+
+    {% if appointments %}
+      <div class="row g-3" id="appointment-list">
+        {% for appointment in appointments %}
+          {% set status_key = appointment.status|lower|replace(' ', '-') %}
+          <div class="col-12 col-xl-6 appointment-item" data-status="{{ status_key }}">
+            <article class="glass-panel appointment-card">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                <div><div class="meta-label">Thời gian</div><div class="appointment-time">{{ appointment.start_time }}{% if appointment.end_time %} – {{ appointment.end_time }}{% endif %}</div></div>
+                <span class="status-badge status-{{ status_key }}">{{ appointment.status }}</span>
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-sm-6"><div class="meta-label">Khách hàng</div><div class="fw-semibold">{{ appointment.customer_name }}</div><a href="tel:{{ appointment.customer_phone }}" class="small">{{ appointment.customer_phone or 'Chưa có số điện thoại' }}</a></div>
+                <div class="col-sm-6"><div class="meta-label">Dịch vụ</div><div>{{ appointment.service_names or 'Chưa có dịch vụ' }}</div><div class="small text-success fw-semibold mt-1">{{ appointment.amount|vnd }}</div></div>
+              </div>
+              <div class="notes-box mb-3"><strong>Ghi chú của khách:</strong> {{ appointment.note or 'Không có ghi chú.' }}</div>
+              <div class="d-flex flex-wrap gap-2">
+                {% if appointment.status in ['Pending', 'Confirmed'] %}
+                  <form method="post" action="{{ url_for('stylist_update_status', appointment_id=appointment.id) }}"><input type="hidden" name="status" value="In Progress"><button class="btn btn-primary btn-sm rounded-pill px-3" type="submit">Nhận ca / Bắt đầu</button></form>
+                  <form method="post" action="{{ url_for('stylist_update_status', appointment_id=appointment.id) }}" onsubmit="return confirm('Bạn muốn hủy hoặc bỏ qua ca này?')"><input type="hidden" name="status" value="Cancelled"><button class="btn btn-outline-danger btn-sm rounded-pill px-3" type="submit">Hủy / Bỏ qua</button></form>
+                {% elif appointment.status == 'In Progress' %}
+                  <form method="post" action="{{ url_for('stylist_update_status', appointment_id=appointment.id) }}"><input type="hidden" name="status" value="Completed"><button class="btn btn-success btn-sm rounded-pill px-3" type="submit">Hoàn thành</button></form>
+                {% endif %}
+              </div>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="glass-panel empty-state d-none mt-3" id="filter-empty">Không có ca làm phù hợp với bộ lọc.</div>
+    {% else %}
+      <div class="glass-panel empty-state">Hôm nay bạn chưa có lịch hẹn được phân công.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.filter-tab').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.filter-tab').forEach((tab) => tab.classList.remove('active'));
+      button.classList.add('active');
+      const filter = button.dataset.filter;
+      let visible = 0;
+      document.querySelectorAll('.appointment-item').forEach((item) => {
+        const status = item.dataset.status;
+        const matches = filter === 'all'
+          || (filter === 'pending' && ['pending', 'confirmed'].includes(status))
+          || status === filter;
+        item.classList.toggle('d-none', !matches);
+        if (matches) visible += 1;
+      });
+      document.getElementById('filter-empty')?.classList.toggle('d-none', visible !== 0);
+    });
+  });
+</script>
+{% endblock %}

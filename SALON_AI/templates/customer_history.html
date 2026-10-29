@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block head_styles %}
+<style>
+  .customer-history { color: #211b3a; }
+  .history-hero { padding: 22px 26px; border-radius: 20px; color: #fff; background: linear-gradient(120deg, #2563eb, #6d28d9 58%, #be185d); box-shadow: 0 14px 32px rgba(91,33,182,.17); }
+  .history-panel { padding: 22px; border: 1px solid #eee7fa; border-radius: 18px; background: rgba(255,255,255,.9); box-shadow: 0 10px 28px rgba(49,46,129,.06); }
+  .status-pill { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: .8rem; font-weight: 700; white-space: nowrap; }
+  .status-pending { color: #92400e; background: #fef3c7; }
+  .status-confirmed { color: #166534; background: #dcfce7; }
+  .status-in-progress { color: #6d28d9; background: #ede9fe; }
+  .status-completed { color: #1d4ed8; background: #dbeafe; }
+  .status-cancelled { color: #64748b; background: #f1f5f9; opacity: .82; }
+  .status-cancel-requested { color:#9a3412;background:#ffedd5 }
+  .payment-unpaid { color:#b91c1c;background:#fee2e2;border:1px solid #fca5a5 }
+  .payment-verification { color:#9a3412;background:#ffedd5 }
+  .payment-paid { color:#166534;background:#dcfce7 }
+  .history-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+  .history-tab { border:1px solid #e2e8f0; border-radius:999px; padding:8px 15px; color:#514866; background:#fff; font-weight:650; }
+  .history-tab.active { border-color:#6d28d9; color:#fff; background:#6d28d9; }
+  [data-history-row][hidden] { display:none !important; }
+  .payment-modal-backdrop{position:fixed;inset:0;z-index:1400;display:none;place-items:center;padding:18px;background:#17102c99;backdrop-filter:blur(5px)}
+  .payment-modal-backdrop.open{display:grid}.payment-modal{width:min(100%,450px);padding:24px;border-radius:22px;background:#fff;box-shadow:0 24px 70px #130b3055}.payment-qr{width:100%;max-width:290px;border:1px solid #eee;border-radius:14px}.pay-btn{border:0;border-radius:999px;background:linear-gradient(100deg,#4f46e5,#9333ea);color:white}
+  .action-buttons{display:flex;align-items:center;justify-content:flex-end;gap:8px;white-space:nowrap}.cancel-btn{border-radius:999px}
+  @media(max-width:700px){.action-buttons{justify-content:flex-start}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="customer-history">
+  <header class="history-hero mb-4">
+    <div class="small text-white-50 text-uppercase fw-semibold">HairStudio · Khách hàng</div>
+    <h1 class="h3 mb-1 mt-1">Lịch sử đặt lịch</h1>
+    <div class="text-white-75">Theo dõi các lịch hẹn và trạng thái hiện tại.</div>
+    {% if current_user %}<span class="badge rounded-pill text-bg-light text-primary mt-3 px-3 py-2">{{ current_user.full_name or current_user.username }} · {{ current_user.customer_code or ('KH%03d'|format(current_user.id)) }}</span>{% endif %}
+  </header>
+  <section class="history-panel">
+    {% if appointments %}
+      <nav class="history-tabs" aria-label="Lọc lịch hẹn">
+        <button type="button" class="history-tab active" data-history-filter="all" aria-pressed="true">Tất cả</button>
+        <button type="button" class="history-tab" data-history-filter="processing" aria-pressed="false">Cần xử lý</button>
+        <button type="button" class="history-tab" data-history-filter="upcoming" aria-pressed="false">Lịch sắp tới</button>
+        <button type="button" class="history-tab" data-history-filter="history" aria-pressed="false">Lịch sử</button>
+      </nav>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Ngày / giờ</th><th>Stylist</th><th>Dịch vụ</th><th>Ghi chú</th><th>Trạng thái</th><th>Thanh toán</th><th class="text-end">Tạm tính</th><th>Thao tác</th></tr></thead>
+          <tbody>
+            {% for item in appointments %}
+              {% set status_key = item.status|lower|replace(' ', '-') %}
+              {% set status_labels = {'Pending': 'Chờ thực hiện', 'Confirmed': 'Đã xác nhận', 'In Progress': 'Đang thực hiện', 'Completed': 'Hoàn thành', 'Cancelled': 'Đã hủy', 'Cancel Requested': 'Yêu cầu hủy'} %}
+              {% set payment_labels = {'Unpaid': 'Chưa thanh toán', 'Pending Verification': 'Chờ xác nhận', 'Paid Online': 'Đã thanh toán', 'Paid': 'Đã thanh toán'} %}
+              {% set payment_key = 'payment-unpaid' if item.payment_status in ['Unpaid', 'Chưa thanh toán', None] else ('payment-verification' if item.payment_status == 'Pending Verification' else 'payment-paid') %}
+              {% set history_group = 'history' if item.status in ['Completed', 'Cancelled'] else ('upcoming' if item.status == 'Confirmed' else 'processing') %}
+              <tr data-history-row data-history-group="{{ history_group }}">
+                <td class="text-nowrap">{{ item.appointment_date }}<br><span class="small text-secondary">{{ item.start_time }}{% if item.end_time %} – {{ item.end_time }}{% endif %}</span></td>
+                <td>{{ item.stylist_name }}</td>
+                <td>{{ item.service_names or '—' }}</td>
+                {% set note_text = item.note|default('', true)|trim %}
+                <td>{% if note_text and 'seed_data' not in note_text|lower %}{{ note_text }}{% else %}<span class="small text-secondary fst-italic">Không có</span>{% endif %}</td>
+                <td><span class="status-pill status-{{ status_key }}">{{ status_labels.get(item.status, item.status) }}</span>{% if item.status == 'Confirmed' %}<div class="small text-success mt-1">Đã chốt lịch</div>{% endif %}</td>
+                <td class="text-nowrap"><span class="status-pill {{ payment_key }}">{{ payment_labels.get(item.payment_status or 'Unpaid', item.payment_status or 'Chưa thanh toán') }}</span>{% if item.payment_status == 'Pending Verification' %}<div class="small text-warning-emphasis mt-1">Đang chờ Salon duyệt</div>{% endif %}</td>
+                <td class="text-end text-nowrap">{{ "{:,.0f}".format(item.amount) }} ₫</td>
+                <td class="text-nowrap">
+                  {% if item.status in ['Cancelled', 'Completed'] %}<span class="status-pill status-{{ status_key }}">{{ status_labels.get(item.status, item.status) }}</span>
+                  {% elif item.payment_status in ['Paid Online', 'Pending Verification', 'Paid'] %}<a class="small text-danger fw-semibold" href="{{ url_for('contact') }}">Liên hệ hỗ trợ để hủy · Hotline: 0901111111</a>
+                  {% elif item.status == 'Cancel Requested' %}<span class="small text-warning-emphasis">Đang chờ duyệt hủy</span>
+                  {% elif item.payment_status in ['Unpaid', 'Chưa thanh toán'] %}<div class="action-buttons"><button type="button" class="btn btn-sm pay-btn js-open-payment" data-id="{{ item.id }}" data-amount="{{ item.amount|int }}"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>Thanh toán QR</button><form method="post" action="{{ url_for('customer_cancel', appointment_id=item.id) }}" onsubmit="return confirm('Bạn có chắc muốn hủy lịch này?')"><button type="submit" class="btn btn-sm btn-outline-danger cancel-btn">Hủy lịch</button></form></div>{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-5">
+        <h2 class="h5">Bạn chưa có lịch hẹn</h2>
+        <p class="text-secondary">Chọn dịch vụ và thời gian để đặt lịch làm đẹp.</p>
+        <a class="btn btn-primary rounded-pill px-4" href="{{ url_for('customer_booking') }}">Đặt lịch ngay</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+<div class="payment-modal-backdrop" id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="paymentTitle">
+  <section class="payment-modal text-center">
+    <button type="button" class="btn-close float-end" id="closePayment" aria-label="Đóng"></button>
+    <h2 class="h4 mt-2" id="paymentTitle">Thanh toán VietQR</h2>
+    <p class="text-secondary mb-3">Quét mã bằng ứng dụng ngân hàng</p>
+    <div class="text-start small bg-light rounded-3 p-3 mb-3"><div>Ngân hàng: <strong>MBBank</strong></div><div>Số tài khoản: <strong>888899999999</strong></div><div>Tên tài khoản: <strong>HAIRSTUDIO</strong></div><div>Số tiền: <strong id="paymentAmount">—</strong></div><div>Nội dung: <strong id="paymentMemo">—</strong></div></div>
+    <img class="payment-qr mb-3" id="paymentQr" alt="Mã QR thanh toán HairStudio">
+    <form method="post" id="confirmPaymentForm"><button class="btn btn-primary rounded-pill px-4">Xác nhận đã chuyển khoản</button></form>
+    <div class="small text-secondary mt-2">Thanh toán sẽ được xác nhận sau khi salon kiểm tra giao dịch.</div>
+  </section>
+</div>
+<script>
+(() => {
+  const filterButtons = document.querySelectorAll('[data-history-filter]');
+  const historyRows = document.querySelectorAll('[data-history-row]');
+  filterButtons.forEach(button => button.addEventListener('click', () => {
+    const filter = button.dataset.historyFilter;
+    filterButtons.forEach(tab => {
+      const active = tab === button;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-pressed', String(active));
+    });
+    historyRows.forEach(row => {
+      row.hidden = filter !== 'all' && row.dataset.historyGroup !== filter;
+    });
+  }));
+  const modal=document.getElementById('paymentModal'), form=document.getElementById('confirmPaymentForm');
+  const close=()=>modal.classList.remove('open');
+  document.querySelectorAll('.js-open-payment').forEach(button=>button.addEventListener('click',()=>{
+    const id=button.dataset.id, amount=button.dataset.amount, memo=`HAIRSTUDIO ${id}`;
+    document.getElementById('paymentAmount').textContent=new Intl.NumberFormat('vi-VN').format(amount)+' ₫';
+    document.getElementById('paymentMemo').textContent=memo;
+    document.getElementById('paymentQr').src=`https://img.vietqr.io/image/MB-888899999999-compact2.png?amount=${encodeURIComponent(amount)}&addInfo=${encodeURIComponent(memo)}&accountName=HAIRSTUDIO`;
+    form.action=`/customer/confirm_payment/${id}`; modal.classList.add('open');
+  }));
+  document.getElementById('closePayment').addEventListener('click',close);
+  modal.addEventListener('click',event=>{if(event.target===modal)close()});
+})();
+</script>
+{% endblock %}

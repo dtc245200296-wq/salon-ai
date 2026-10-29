@@ -1,0 +1,111 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="dashboard-page">
+  <header class="dashboard-hero">
+    <div><div class="dashboard-eyebrow">HairStudio · Trung tâm điều hành</div><h1 class="dashboard-title">Tổng quan salon</h1><p class="dashboard-subtitle">Xin chào {{ current_user.full_name if current_user else '' }} · {{ now.strftime('%d/%m/%Y') }}</p></div>
+    <a class="btn btn-light border rounded-pill px-3" href="{{ url_for('appointments') }}"><i class="bi bi-calendar2-week me-1"></i>Quản lý lịch hẹn</a>
+  </header>
+
+  {% if is_admin or is_receptionist or session.get('role') == 'staff' %}
+  <section class="dashboard-kpis" aria-label="Chỉ số tổng quan">
+    <a class="dashboard-kpi-link" href="{{ url_for('customers') }}" aria-label="Mở danh sách khách hàng"><article class="dashboard-kpi"><span class="kpi-icon blue"><i class="bi bi-people-fill"></i></span><div><span class="kpi-label">Khách hàng</span><strong class="kpi-value">{{ stats.customers }}</strong><div class="kpi-meta">Tổng hồ sơ khách hàng</div></div><span class="click-arrow" aria-hidden="true">→</span></article></a>
+    <a class="dashboard-kpi-link" href="{{ url_for('appointments', filter='today') }}" aria-label="Mở lịch hẹn hôm nay"><article class="dashboard-kpi"><span class="kpi-icon purple"><i class="bi bi-calendar-check-fill"></i></span><div><span class="kpi-label">Lịch hôm nay</span><strong class="kpi-value purple-text">{{ stats.appointments_today }}</strong><div class="kpi-meta">Ca hẹn trong ngày</div></div><span class="click-arrow" aria-hidden="true">→</span></article></a>
+    <a class="dashboard-kpi-link" href="{{ url_for('appointments', status='pending') }}" aria-label="Mở lịch hẹn cần duyệt"><article class="dashboard-kpi"><span class="kpi-icon amber"><i class="bi bi-clock-history"></i></span><div><span class="kpi-label">Lịch chờ duyệt</span><strong class="kpi-value">{{ stats.pending }}</strong><span class="pending-pill"><span class="pending-dot"></span>Cần xử lý</span></div><span class="click-arrow" aria-hidden="true">→</span></article></a>
+    <a class="dashboard-kpi-link" href="{{ url_for('admin_reports') }}" aria-label="Mở báo cáo doanh thu tháng"><article class="dashboard-kpi"><span class="kpi-icon green"><i class="bi bi-cash-stack"></i></span><div><span class="kpi-label">Doanh thu tháng</span><strong class="kpi-value">{{ stats.total_revenue|vnd }}</strong><div class="kpi-meta">Từ các ca đã hoàn thành</div></div><span class="click-arrow" aria-hidden="true">→</span></article></a>
+  </section>
+
+  <section class="dashboard-columns" aria-label="Vận hành trong ngày">
+    <div class="dashboard-stack">
+      {% if payment_verifications %}
+      <section class="dashboard-panel verify-panel">
+        <div class="panel-head"><div><h2 class="panel-title"><i class="bi bi-qr-code-scan me-2 text-warning"></i>Thanh toán VietQR chờ xác nhận</h2><p class="panel-caption">Kiểm tra giao dịch và xác nhận thanh toán đã về tài khoản.</p></div><span class="badge rounded-pill text-bg-warning">{{ payment_verifications|length }} chờ duyệt</span></div>
+        <div class="panel-body">
+          {% for a in payment_verifications %}<div class="verify-row"><div><div class="verify-id">Mã lịch #{{ a.id }} · {{ a.appointment_date }} · {{ a.start_time }}</div><div class="verify-name">{{ a.customer_name }}</div></div><strong class="verify-amount">{{ a.amount|vnd }}</strong><form method="post" action="{{ url_for('admin_verify_payment', appointment_id=a.id) }}"><input type="hidden" name="return_to" value="dashboard"><button class="verify-action" type="submit"><i class="bi bi-check-lg me-1"></i>Duyệt thanh toán</button></form></div>{% endfor %}
+        </div>
+      </section>
+      {% endif %}
+      {% if cancel_requests %}
+      <section class="dashboard-panel">
+        <div class="panel-head"><div><h2 class="panel-title"><i class="bi bi-calendar-x me-2 text-danger"></i>Yêu cầu hủy lịch</h2><p class="panel-caption">Các yêu cầu đang đợi nhân viên xử lý.</p></div><span class="badge rounded-pill text-bg-danger">{{ cancel_requests|length }}</span></div>
+        <div class="table-wrap"><table class="dashboard-table"><thead><tr><th>Mã lịch</th><th>Khách hàng</th><th>Ngày / giờ</th><th>Thao tác</th></tr></thead><tbody>
+          {% for a in cancel_requests %}<tr><td>#{{ a.id }}</td><td class="customer-cell">{{ a.customer_name }}</td><td>{{ a.appointment_date }} · {{ a.start_time }}</td><td><div class="cancel-action"><form method="post" action="{{ url_for('admin_approve_cancel', appointment_id=a.id) }}"><input type="hidden" name="return_to" value="dashboard"><button class="btn btn-sm btn-danger rounded-pill" type="submit">Đồng ý hủy</button></form><form method="post" action="{{ url_for('admin_reject_cancel', appointment_id=a.id) }}"><input type="hidden" name="return_to" value="dashboard"><button class="btn btn-sm btn-outline-secondary rounded-pill" type="submit">Từ chối</button></form></div></td></tr>{% endfor %}
+        </tbody></table></div>
+      </section>
+      {% endif %}
+      <section class="dashboard-panel">
+        <div class="panel-head"><div><h2 class="panel-title">Lịch hẹn hôm nay</h2><p class="panel-caption">Danh sách ca làm trong ngày · {{ today_appointments|length }} ca</p></div><a class="latest-link" href="{{ url_for('appointments') }}">Mở lịch <i class="bi bi-arrow-up-right"></i></a></div>
+        <div class="table-wrap"><table class="dashboard-table"><thead><tr><th>Giờ</th><th>Khách hàng</th><th>Stylist</th><th>Trạng thái</th></tr></thead><tbody>
+          {% for a in today_appointments %}{% set status_label = {'Pending':'Chờ thực hiện','Confirmed':'Đã xác nhận','In Progress':'Đang thực hiện','Completed':'Đã hoàn thành','Cancelled':'Đã hủy','Cancel Requested':'Yêu cầu hủy'} %}<tr><td class="time-cell">{{ a.start_time }}</td><td class="customer-cell">{{ a.customer_name }}</td><td>{{ a.barber_name }}</td><td><span class="status-badge {% if a.status == 'Completed' %}status-completed{% elif a.status == 'Confirmed' %}status-confirmed{% elif a.status == 'Cancelled' %}status-cancelled{% elif a.status == 'In Progress' %}status-progress{% elif a.status == 'Cancel Requested' %}status-cancelled{% else %}status-pending{% endif %}">{{ status_label.get(a.status, a.status) }}</span></td></tr>
+          {% else %}<tr><td class="empty-note" colspan="4">Chưa có lịch hẹn hôm nay.</td></tr>{% endfor %}
+        </tbody></table></div>
+      </section>
+      <section class="dashboard-panel latest-panel">
+        <div class="panel-head"><div><a class="dashboard-panel-link" href="{{ url_for('appointments') }}"><h2 class="panel-title">Lịch hẹn mới nhất <span class="click-arrow" aria-hidden="true">→</span></h2></a><p class="panel-caption">Các lịch được tạo gần đây nhất trong hệ thống.</p></div><a class="latest-link" href="{{ url_for('appointments') }}">Xem tất cả <i class="bi bi-arrow-right"></i></a></div>
+        <div class="table-wrap"><table class="dashboard-table"><thead><tr><th>Mã lịch</th><th>Ngày / giờ</th><th>Khách hàng</th><th>Stylist</th><th>Dịch vụ</th><th>Trạng thái</th><th class="text-end">Tạm tính</th></tr></thead><tbody id="dashboard-latest-body">
+          {% for a in latest_appointments %}
+            {% if a.status == 'Cancelled' %}{% set latest_label='Đã hủy' %}{% set latest_class='status-cancelled' %}
+            {% elif a.status == 'Completed' %}{% set latest_label='Đã hoàn thành' %}{% set latest_class='status-completed' %}
+            {% elif a.payment_status == 'Unpaid' %}{% set latest_label='Chưa thanh toán' %}{% set latest_class='status-unpaid' %}
+            {% elif a.payment_status == 'Pending Verification' %}{% set latest_label='Chờ xác nhận' %}{% set latest_class='status-verification' %}
+            {% elif a.status == 'Confirmed' %}{% set latest_label='Đã xác nhận' %}{% set latest_class='status-confirmed' %}
+            {% elif a.status == 'In Progress' %}{% set latest_label='Đang thực hiện' %}{% set latest_class='status-progress' %}
+            {% elif a.status == 'Cancel Requested' %}{% set latest_label='Yêu cầu hủy' %}{% set latest_class='status-cancelled' %}
+            {% else %}{% set latest_label='Chờ xác nhận' %}{% set latest_class='status-pending' %}{% endif %}
+            <tr><td class="fw-bold">#{{ a.id }}</td><td class="text-nowrap">{{ a.appointment_date }} · {{ a.start_time }}</td><td class="customer-cell">{{ a.customer_name }}</td><td>{{ a.stylist_name }}</td><td>{{ a.service_names or '—' }}</td><td><span class="status-badge {{ latest_class }}">{{ latest_label }}</span></td><td class="text-end text-nowrap fw-semibold">{{ a.amount|vnd }}</td></tr>
+          {% else %}<tr><td class="empty-note" colspan="7">Chưa có lịch hẹn nào.</td></tr>{% endfor %}
+        </tbody></table></div>
+      </section>
+    </div>
+
+    <aside class="dashboard-stack">
+      <section class="dashboard-panel"><div class="panel-head"><div><a class="dashboard-panel-link" href="{{ url_for('services') }}"><h2 class="panel-title">Dịch vụ phổ biến <span class="click-arrow" aria-hidden="true">→</span></h2></a><p class="panel-caption">Tỷ trọng lượt đặt trong danh sách nổi bật</p></div><i class="bi bi-stars text-primary"></i></div><div class="panel-body">
+        {% set max_service_count = popular[0].count if popular else 1 %}{% for x in popular %}<div class="service-item"><div class="service-top"><span class="service-name">{{ x.name }}</span><span class="service-count">{{ x.count }} lượt</span></div><div class="service-track"><div class="service-progress" style="width: {{ (x.count * 100 / max_service_count)|round|int }}%"></div></div></div>{% else %}<div class="empty-note">Chưa có dữ liệu đặt dịch vụ.</div>{% endfor %}
+      </div></section>
+      <section class="dashboard-panel"><div class="panel-head"><div><a class="dashboard-panel-link" href="{{ url_for('barbers') }}"><h2 class="panel-title">Top Stylist <span class="click-arrow" aria-hidden="true">→</span></h2></a><p class="panel-caption">Ca làm đã hoàn thành</p></div><i class="bi bi-award text-warning"></i></div><div class="panel-body">
+        {% for stylist in stats.top_stylists %}<div class="stylist-item"><span class="stylist-avatar-ring"><span class="stylist-avatar">{{ stylist.name[:1]|upper }}</span></span><span class="stylist-name">{{ stylist.name }}</span><span class="stylist-count">{{ stylist.completed }} ca</span></div>{% else %}<div class="empty-note">Chưa có dữ liệu Stylist.</div>{% endfor %}
+      </div></section>
+    </aside>
+  </section>
+
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(()=>{
+  const body=document.getElementById('dashboard-latest-body');
+  if(!body)return;
+  const endpoint={{ url_for('api_dashboard_latest_appointments')|tojson }};
+  const statusInfo=a=>{
+    if(a.status==='Cancelled')return ['Đã hủy','status-cancelled'];
+    if(a.status==='Completed')return ['Đã hoàn thành','status-completed'];
+    if(a.payment_status==='Unpaid')return ['Chưa thanh toán','status-unpaid'];
+    if(a.payment_status==='Pending Verification')return ['Chờ xác nhận','status-verification'];
+    if(a.status==='Confirmed')return ['Đã xác nhận','status-confirmed'];
+    if(a.status==='In Progress')return ['Đang thực hiện','status-progress'];
+    if(a.status==='Cancel Requested')return ['Yêu cầu hủy','status-cancelled'];
+    return ['Chờ xác nhận','status-pending'];
+  };
+  const cell=(value,className='')=>{const td=document.createElement('td');td.textContent=value??'';if(className)td.className=className;return td;};
+  const render=appointments=>{
+    body.replaceChildren();
+    if(!appointments.length){const tr=document.createElement('tr'),td=cell('Chưa có lịch hẹn nào.','empty-note');td.colSpan=7;tr.append(td);body.append(tr);return;}
+    appointments.forEach(a=>{
+      const tr=document.createElement('tr');
+      tr.append(cell(`#${a.id}`,'fw-bold'));
+      tr.append(cell(`${a.appointment_date||''} · ${a.start_time||''}`,'text-nowrap'));
+      tr.append(cell(a.customer_name,'customer-cell'));
+      tr.append(cell(a.stylist_name));
+      tr.append(cell(a.service_names||'—'));
+      const status=cell('');const badge=document.createElement('span');const [label,css]=statusInfo(a);badge.className=`status-badge ${css}`;badge.textContent=label;status.append(badge);tr.append(status);
+      tr.append(cell(`${new Intl.NumberFormat('vi-VN').format(Number(a.amount)||0)} đ`,'text-end text-nowrap fw-semibold'));
+      body.append(tr);
+    });
+  };
+  const refresh=async()=>{try{const response=await fetch(endpoint,{headers:{'Accept':'application/json'},cache:'no-store'});if(!response.ok)return;const data=await response.json();render(data.appointments||[]);}catch(_error){/* Giữ nguyên dữ liệu đang hiển thị khi kết nối tạm thời bị gián đoạn. */}};
+  window.setInterval(refresh,10000);
+})();
+</script>
+{% endblock %}

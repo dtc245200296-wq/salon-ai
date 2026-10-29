@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block head_styles %}
+<style>
+  .booking-page { color: #211b3a; }
+  .booking-hero { padding: 22px 26px; border-radius: 20px; color: #fff; background: linear-gradient(120deg, #2563eb, #6d28d9 58%, #be185d); box-shadow: 0 14px 32px rgba(91,33,182,.17); }
+  .booking-panel { padding: 24px; border: 1px solid #eee7fa; border-radius: 18px; background: rgba(255,255,255,.9); box-shadow: 0 10px 28px rgba(49,46,129,.06); }
+  .service-option { position: relative; height: 100%; padding-left: 30px; }
+  .service-option input { position: absolute; top: 19px; left: 3px; z-index: 2; width: 19px; height: 19px; }
+  .service-card { width: 100%; height: 100%; padding: 17px; border: 1px solid #e9dff7; border-radius: 15px; color: inherit; background: #fff; text-align: left; transition: .18s ease; }
+  .service-option.selected .service-card { border-color: #7c3aed; background: #faf7ff; box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
+  .service-card:hover { border-color: #c4b5fd; transform: translateY(-1px); }
+  .service-price { color: #6d28d9; font-weight: 750; }
+  .service-duration { color: #7b748b; font-size: .86rem; }
+  .form-label { font-weight: 650; }
+  .stylist-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; margin-top:14px; }
+  .stylist-card { display:flex; align-items:center; gap:11px; padding:12px; border:1px solid #e8e4ef; border-radius:15px; background:#fff; transition:.18s ease; }
+  .stylist-card.selected { border-color:#8b5cf6; background:#faf7ff; box-shadow:0 0 0 2px #8b5cf61c; }
+  .stylist-avatar { display:grid; place-items:center; width:44px; height:44px; flex:none; border-radius:50%; color:#fff; background:linear-gradient(135deg,#4f46e5,#9333ea,#ec4899); font-weight:800; }
+  .stylist-info { min-width:0; flex:1; }
+  .stylist-info button { display:block; max-width:100%; overflow:hidden; padding:0; border:0; background:none; color:#33264e; font-weight:750; text-align:left; text-overflow:ellipsis; white-space:nowrap; }
+  .stylist-info small { display:block; overflow:hidden; color:#817990; font-size:.75rem; text-overflow:ellipsis; white-space:nowrap; }
+  .stylist-profile-trigger { display:contents; }
+  .slot-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(82px,1fr)); gap:8px; }
+  .slot-button { padding:8px 6px; border:1px solid #ded8ea; border-radius:10px; background:#fff; color:#51436d; font-weight:700; transition:.15s; }
+  .slot-button:not(:disabled):hover { border-color:#8b5cf6; color:#6d28d9; background:#faf7ff; }
+  .slot-button.active { border-color:#6d28d9; color:#fff; background:#6d28d9; }
+  .slot-button:disabled { border-color:#eee9f2; color:#b7b0c0; background:#f4f2f6; cursor:not-allowed; text-decoration:line-through; }
+  .stylist-badge { display:inline-flex; margin:3px 4px 3px 0; padding:6px 10px; border-radius:999px; color:#6539a3; background:#f2eafe; font-size:.8rem; font-weight:700; }
+  .stylist-profile-avatar { display:grid; place-items:center; width:80px; height:80px; border-radius:50%; color:#fff; background:linear-gradient(135deg,#4f46e5,#9333ea,#ec4899); font-size:1.8rem; font-weight:800; }
+  .stylist-profile-modal { overflow:hidden; border-radius:22px; }
+  .stylist-profile-banner { position:relative; padding:26px 28px; background:linear-gradient(110deg,#7c3aed,#5b4be5 58%,#4f46e5); }
+  .stylist-profile-banner .stylist-profile-avatar { width:88px; height:88px; border:4px solid #fff; box-shadow:0 8px 22px #24104440; background:linear-gradient(135deg,#c4b5fd,#7c3aed,#ec4899); }
+  .stylist-profile-close { position:absolute; top:18px; right:18px; opacity:.9; }
+  .stylist-stats-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); overflow:hidden; border:1px solid #eeeaf5; border-radius:16px; background:#fff; }
+  .stylist-stat { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-height:86px; padding:12px 6px; text-align:center; }
+  .stylist-stat + .stylist-stat { border-left:1px solid #eeeaf5; }
+  .stylist-stat strong { color:#352453; font-size:1.1rem; }
+  .stylist-stat small { color:#817990; font-size:.76rem; }
+  .stylist-story-card { padding:16px; border:1px solid #ebe8f1; border-radius:14px; background:#f8f7fb; color:#544d62; line-height:1.6; }
+  .stylist-choose-button { padding:10px 18px; border:0; border-radius:12px; color:#fff; background:linear-gradient(100deg,#7c3aed,#4f46e5); box-shadow:0 7px 18px #6d28d92e; font-weight:700; transition:transform .18s,box-shadow .18s; }
+  .stylist-choose-button:hover { color:#fff; transform:scale(1.04); box-shadow:0 10px 24px #6d28d944; }
+  @media (max-width: 575px) { .booking-panel { padding: 17px; } .booking-hero { padding: 20px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="booking-page">
+  <header class="booking-hero mb-4">
+    <div class="small text-white-50 text-uppercase fw-semibold">Salon AI · Khách hàng</div>
+    <h1 class="h3 mb-1 mt-1">Đặt lịch làm tóc</h1>
+    <div class="text-white-75">Chọn dịch vụ và nhận tư vấn trước khi đặt lịch.</div>
+  </header>
+
+  <form id="booking-form" method="post" action="{{ url_for('customer_booking') }}" novalidate>
+    <input type="hidden" id="hair_condition" name="hair_condition">
+    <input type="hidden" id="style_request" name="style_request">
+    <section class="booking-panel mb-4">
+      <div class="d-flex justify-content-between align-items-end gap-2 mb-3">
+        <div><h2 class="h5 mb-1">1. Chọn dịch vụ</h2><div class="small text-secondary">Chọn một hoặc nhiều dịch vụ; bấm thẻ để xem chi tiết.</div></div>
+      </div>
+      {% if services %}
+        <div class="row g-3">
+          {% for service in services %}
+            <div class="col-12 col-md-6 col-xl-4">
+              <div class="service-option" data-service-option>
+                <input class="form-check-input service-checkbox" type="checkbox" name="service_ids" value="{{ service.id }}" data-duration="{{ service.duration_minutes }}" aria-label="Chọn {{ service.name }}">
+                <button class="service-card" type="button" data-service-detail
+                        aria-label="Xem chi tiết dịch vụ {{ service.name }}"
+                        data-id="{{ service.id }}"
+                        data-name="{{ service.name }}"
+                        data-description="{{ service.description or 'Chưa có mô tả chi tiết.' }}"
+                        data-duration="{{ service.duration_minutes }} phút"
+                        data-price="{{ '{:,.0f}'.format(service.price) }} ₫"
+                        data-products="{{ service.products or '' }}"
+                        data-styles="{{ service.styles or '' }}"
+                        data-min-length="{{ service.min_length or '' }}"
+                        data-after-length="{{ service.after_length or '' }}"
+                        data-steps="{{ service.steps or '' }}"
+                        data-style-type="{{ service.style_type or '' }}"
+                        data-suitable-length="{{ service.suitable_length or '' }}"
+                        data-color-tone="{{ service.color_tone or '' }}"
+                        data-chemical-brands="{{ service.chemical_brands or '' }}"
+                        data-chemical-origin="{{ service.chemical_origin or '' }}"
+                        data-inspection-cert="{{ service.inspection_cert or '' }}">
+                  <span class="d-block fw-semibold pe-4">{{ service.name }}</span>
+                  {% if service.description %}<span class="d-block small text-secondary mt-1">{{ service.description }}</span>{% endif %}
+                  <span class="d-flex justify-content-between align-items-center mt-3 gap-2"><span class="service-price">{{ "{:,.0f}".format(service.price) }} ₫</span><span class="service-duration">{{ service.duration_minutes }} phút</span></span>
+                  <span class="d-block small text-primary mt-2"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Xem chi tiết</span>
+                </button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="alert alert-warning mb-0">Hiện chưa có dịch vụ đang kinh doanh.</div>
+      {% endif %}
+    </section>
+
+    <section class="booking-panel mb-4">
+      <h2 class="h5 mb-3">2. Chọn Stylist và thời gian</h2>
+      <div class="row g-3">
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="stylist_id">Stylist / Thợ</label>
+          <select class="form-select" id="stylist_id" name="stylist_id" required>
+            <option value="auto">Hệ thống tự xếp Stylist phù hợp</option>
+            {% for stylist in stylists %}
+              <option value="{{ stylist.id }}">{{ stylist.full_name }}{% if stylist.specialty %} · {{ stylist.specialty }}{% endif %}</option>
+            {% endfor %}
+          </select>
+          <div class="stylist-grid" aria-label="Hồ sơ Stylist">
+            {% for stylist in stylists %}
+            <article class="stylist-card" data-stylist-card="{{ stylist.id }}">
+              <button type="button" class="stylist-avatar border-0" data-stylist-profile data-stylist-id="{{ stylist.id }}" data-name="{{ stylist.full_name }}" data-experience="{{ stylist.experience_years }}" data-specialties="{{ stylist.specialties }}" data-bio="{{ stylist.bio }}" data-gender="{{ stylist.gender_focus }}" data-rating="{{ stylist.rating }}" data-review-count="{{ stylist.review_count }}" data-total-customers="{{ stylist.total_customers }}" data-awards="{{ stylist.awards }}" data-philosophy="{{ stylist.philosophy }}" aria-label="Xem hồ sơ {{ stylist.full_name }}">{{ stylist.full_name[:1]|upper }}</button>
+              <div class="stylist-info"><button type="button" data-stylist-profile data-stylist-id="{{ stylist.id }}" data-name="{{ stylist.full_name }}" data-experience="{{ stylist.experience_years }}" data-specialties="{{ stylist.specialties }}" data-bio="{{ stylist.bio }}" data-gender="{{ stylist.gender_focus }}" data-rating="{{ stylist.rating }}" data-review-count="{{ stylist.review_count }}" data-total-customers="{{ stylist.total_customers }}" data-awards="{{ stylist.awards }}" data-philosophy="{{ stylist.philosophy }}">{{ stylist.full_name }}</button><small>{{ stylist.specialties or stylist.specialty or 'Stylist HairStudio' }}</small></div>
+              <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" data-select-stylist="{{ stylist.id }}">Chọn</button>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4"><label class="form-label" for="appointment_date">Ngày hẹn</label><input class="form-control" type="date" id="appointment_date" name="appointment_date" min="{{ today }}" required></div>
+        <div class="col-12"><label class="form-label">Khung giờ bắt đầu</label><input type="hidden" id="start_time" name="start_time"><div id="time-slot-grid" class="slot-grid"></div><div id="time-slot-feedback" class="form-text">Chọn Stylist và ngày để xem khung giờ còn trống.</div></div>
+        <div class="col-12"><label class="form-label" for="note">Ghi chú / Yêu cầu thêm</label><textarea class="form-control" id="note" name="note" rows="3" placeholder="Chia sẻ yêu cầu khác bạn muốn Stylist lưu ý"></textarea></div>
+      </div>
+    </section>
+    <div class="d-flex justify-content-end"><button class="btn btn-primary rounded-pill px-4 py-2" type="submit" {% if not services %}disabled{% endif %}>Xác nhận đặt lịch</button></div>
+  </form>
+</div>
+
+<div class="modal fade" id="service-detail-modal" tabindex="-1" aria-labelledby="service-detail-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 rounded-4 shadow">
+    <div class="modal-header border-0 pb-0"><div><div class="small text-uppercase text-primary fw-semibold">Chi tiết dịch vụ</div><h2 class="modal-title h5" id="service-detail-title"></h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
+    <div class="modal-body">
+      <p id="service-detail-description" class="text-secondary"></p>
+      <div class="d-flex justify-content-between rounded-3 bg-light p-3 mb-4"><span id="service-detail-duration"></span><strong id="service-detail-price" class="text-primary"></strong></div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-4"><div class="rounded-3 border p-3 h-100"><div class="small text-uppercase text-secondary fw-semibold">💇 Form dáng</div><div id="service-detail-style-type" class="mt-1"></div></div></div>
+        <div class="col-md-4"><div class="rounded-3 border p-3 h-100"><div class="small text-uppercase text-secondary fw-semibold">📏 Độ dài phù hợp</div><div id="service-detail-suitable-length" class="mt-1"></div></div></div>
+        <div class="col-md-4"><div class="rounded-3 border p-3 h-100"><div class="small text-uppercase text-secondary fw-semibold">🎨 Tone màu</div><div id="service-detail-color-tone" class="mt-1"></div></div></div>
+        <div class="col-md-4"><div class="rounded-3 border p-3 h-100"><div class="small text-uppercase text-secondary fw-semibold">🧪 Hóa chất / Thương hiệu</div><div id="service-detail-chemical-brands" class="mt-1"></div></div></div>
+        <div class="col-md-4"><div class="rounded-3 border p-3 h-100"><div class="small text-uppercase text-secondary fw-semibold">🌍 Xuất xứ</div><div id="service-detail-chemical-origin" class="mt-1"></div></div></div>
+        <div class="col-md-4"><div class="rounded-3 border p-3 h-100"><div class="small text-uppercase text-secondary fw-semibold">🟢 Mã kiểm định BYT</div><div id="service-detail-inspection-cert" class="mt-1"></div></div></div>
+        <div class="col-12"><div class="rounded-3 border p-3"><div class="small text-uppercase text-secondary fw-semibold">🌿 Dược liệu / Hóa chất sử dụng</div><div id="service-detail-products" class="mt-1"></div><div class="form-text">Sản phẩm mang tính tham khảo; Stylist xác nhận trước khi thực hiện.</div></div></div>
+        <div class="col-12"><div class="rounded-3 border p-3"><div class="small text-uppercase text-secondary fw-semibold">💇 Tên kiểu tóc &amp; Dáng gợi ý</div><div id="service-detail-styles" class="mt-1"></div></div></div>
+        <div class="col-12 col-md-6"><div class="rounded-3 border p-3 h-100"><div class="small text-uppercase text-secondary fw-semibold">📏 Độ dài tóc ban đầu vừa đủ</div><div id="service-detail-min-length" class="mt-1"></div></div></div>
+        <div class="col-12 col-md-6"><div class="rounded-3 border p-3 h-100"><div class="small text-uppercase text-secondary fw-semibold">✂️ Độ dài tóc dự kiến sau khi cắt xong</div><div id="service-detail-after-length" class="mt-1"></div></div></div>
+        <div class="col-12"><div class="rounded-3 border p-3"><div class="small text-uppercase text-secondary fw-semibold">📋 Lộ trình cắt / thực hiện</div><ol id="service-detail-steps" class="mt-2 mb-0 ps-3"></ol></div></div>
+      </div>
+      <div class="mb-3"><label class="form-label" for="modal-hair-condition">Tình trạng chất tóc</label><select class="form-select" id="modal-hair-condition"><option value="">Chọn tình trạng</option><option>Tóc khỏe</option><option>Tóc xơ tổn thương</option><option>Tóc tẩy</option></select></div>
+      <div><label class="form-label" for="modal-style-request">Kiểu tóc / Màu sắc mong muốn</label><textarea class="form-control" id="modal-style-request" rows="3" placeholder="Ví dụ: Layer ngang vai, màu nâu lạnh"></textarea></div>
+    </div>
+    <div class="modal-footer border-0 pt-0"><button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Đóng</button><button type="button" id="save-service-details" class="btn btn-primary rounded-pill px-4">Chọn dịch vụ</button></div>
+  </div></div>
+</div>
+<div class="modal fade" id="stylist-profile-modal" tabindex="-1" aria-labelledby="stylist-profile-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content stylist-profile-modal border-0 shadow-lg">
+    <div class="stylist-profile-banner"><button type="button" class="btn-close btn-close-white stylist-profile-close" data-bs-dismiss="modal" aria-label="Đóng"></button><div class="d-flex align-items-center gap-3"><div class="stylist-profile-avatar" id="profile-avatar">H</div><div><div class="small text-white-50 text-uppercase fw-bold">Hồ sơ Stylist</div><h2 class="h3 mb-1 text-white" id="profile-name"></h2><div class="text-white-50" id="profile-meta"></div></div></div></div>
+    <div class="modal-body p-4"><div class="stylist-stats-grid mb-4"><div class="stylist-stat"><strong><span id="profile-rating">—</span> ⭐</strong><small><span id="profile-review-count">0</span> đánh giá</small></div><div class="stylist-stat"><strong><span id="profile-experience">0+</span> Năm</strong><small>Kinh nghiệm</small></div><div class="stylist-stat"><strong id="profile-customer-count">0+</strong><small>Lượt khách</small></div></div>
+      <section class="mb-4"><h3 class="h6 fw-bold mb-2">Sở trường</h3><div id="profile-specialties"></div></section>
+      <div class="row g-3"><div class="col-12"><section class="stylist-story-card h-100"><h3 class="h6 fw-bold mb-2">🏆 Thành tích &amp; Chứng chỉ</h3><p class="mb-0" id="profile-awards"></p></section></div><div class="col-12"><section class="stylist-story-card h-100"><h3 class="h6 fw-bold mb-2">💜 Triết lý làm nghề</h3><p class="mb-0" id="profile-philosophy"></p></section></div><div class="col-12"><p class="text-secondary small mb-0" id="profile-bio"></p></div></div>
+    </div><div class="modal-footer px-4 pb-4 pt-0 border-0"><button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">Đóng</button><button type="button" id="choose-profile-stylist" class="btn stylist-choose-button"><i class="bi bi-check-lg me-1"></i>Chọn Stylist này</button></div>
+  </div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/form-validation.js') }}"></script>
+<script>
+(() => {
+  const detailModal = new bootstrap.Modal(document.getElementById('service-detail-modal'));
+  let activeServiceId = null;
+  document.querySelectorAll('[data-service-detail]').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeServiceId = button.dataset.id;
+      document.getElementById('service-detail-title').textContent = button.dataset.name;
+      document.getElementById('service-detail-description').textContent = button.dataset.description;
+      document.getElementById('service-detail-duration').textContent = button.dataset.duration;
+      document.getElementById('service-detail-price').textContent = button.dataset.price;
+      document.getElementById('service-detail-style-type').textContent = button.dataset.styleType || 'Chưa có thông tin';
+      document.getElementById('service-detail-suitable-length').textContent = button.dataset.suitableLength || 'Chưa có thông tin';
+      document.getElementById('service-detail-color-tone').textContent = button.dataset.colorTone || 'Chưa có thông tin';
+      document.getElementById('service-detail-chemical-brands').textContent = button.dataset.chemicalBrands || 'Chưa có thông tin';
+      document.getElementById('service-detail-chemical-origin').textContent = button.dataset.chemicalOrigin || 'Chưa có thông tin';
+      document.getElementById('service-detail-inspection-cert').textContent = button.dataset.inspectionCert || 'Chưa có thông tin';
+      document.getElementById('service-detail-products').textContent = button.dataset.products;
+      document.getElementById('service-detail-styles').textContent = button.dataset.styles;
+      document.getElementById('service-detail-min-length').textContent = button.dataset.minLength || 'Chưa có thông tin';
+      document.getElementById('service-detail-after-length').textContent = button.dataset.afterLength || 'Chưa có thông tin';
+      const steps = (button.dataset.steps || '').split('→').map((step) => step.trim()).filter(Boolean);
+      const stepsList = document.getElementById('service-detail-steps');
+      stepsList.replaceChildren(...steps.map((step) => {
+        const item = document.createElement('li');
+        item.textContent = step;
+        return item;
+      }));
+      document.getElementById('modal-hair-condition').value = document.getElementById('hair_condition').value;
+      document.getElementById('modal-style-request').value = document.getElementById('style_request').value;
+      const checkbox = document.querySelector(`.service-checkbox[value="${activeServiceId}"]`);
+      document.getElementById('save-service-details').textContent = checkbox.checked ? 'Cập nhật lựa chọn' : 'Chọn dịch vụ';
+      detailModal.show();
+    });
+  });
+  document.getElementById('save-service-details').addEventListener('click', () => {
+    const checkbox = document.querySelector(`.service-checkbox[value="${activeServiceId}"]`);
+    checkbox.checked = true;
+    checkbox.closest('[data-service-option]').classList.add('selected');
+    document.getElementById('hair_condition').value = document.getElementById('modal-hair-condition').value;
+    document.getElementById('style_request').value = document.getElementById('modal-style-request').value;
+    detailModal.hide();
+  });
+  document.querySelectorAll('.service-checkbox').forEach((checkbox) => checkbox.addEventListener('change', () => {
+    checkbox.closest('[data-service-option]').classList.toggle('selected', checkbox.checked);
+  }));
+
+  const stylistSelect = document.getElementById('stylist_id');
+  const appointmentDate = document.getElementById('appointment_date');
+  const slotGrid = document.getElementById('time-slot-grid');
+  const slotFeedback = document.getElementById('time-slot-feedback');
+  const startTimeInput = document.getElementById('start_time');
+  const bookingForm = document.getElementById('booking-form');
+  const profileModal = new bootstrap.Modal(document.getElementById('stylist-profile-modal'));
+  let profileStylistId = null;
+  let busyIntervals = [];
+  const serviceDuration = () => [...document.querySelectorAll('.service-checkbox:checked')]
+    .reduce((sum, checkbox) => sum + Number(checkbox.dataset.duration || 0), 0) || 30;
+  const selectedServices = () => document.querySelectorAll('.service-checkbox:checked').length > 0;
+  const minuteOf = (value) => { const [hour, minute] = value.split(':').map(Number); return hour * 60 + minute; };
+  const renderSlots = () => {
+    slotGrid.replaceChildren();
+    startTimeInput.value = '';
+    const stylistId = stylistSelect.value;
+    const dateValue = appointmentDate.value;
+    if (!dateValue) { slotFeedback.textContent = 'Chọn ngày hẹn để xem khung giờ.'; return; }
+    if (stylistId !== 'auto' && !busyIntervals.length && slotFeedback.dataset.loading === '1') return;
+    const duration = serviceDuration();
+    const isToday = dateValue === '{{ today }}';
+    const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+    for (let minutes = 9 * 60; minutes <= 19 * 60 + 30; minutes += 30) {
+      const label = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+      const overlaps = busyIntervals.some(interval => minutes < minuteOf(interval.end_time) && minutes + duration > minuteOf(interval.start_time));
+      const past = isToday && minutes <= nowMinutes;
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'slot-button'; button.textContent = label;
+      button.disabled = overlaps || past;
+      if (overlaps) { button.title = 'Stylist đã có lịch trong khoảng thời gian này'; button.setAttribute('aria-label', `${label}, đã có lịch`); }
+      if (past) button.title = 'Khung giờ đã qua';
+      button.addEventListener('click', () => {
+        slotGrid.querySelectorAll('.slot-button').forEach(item => item.classList.remove('active'));
+        button.classList.add('active'); startTimeInput.value = label;
+        slotFeedback.textContent = `${label} · ${duration} phút`;
+        slotFeedback.classList.remove('text-danger');
+      });
+      slotGrid.appendChild(button);
+    }
+    if (!selectedServices()) slotFeedback.textContent = 'Chọn dịch vụ để kiểm tra chính xác thời lượng khung giờ.';
+    else if (stylistId === 'auto') slotFeedback.textContent = 'Hệ thống sẽ tự kiểm tra và xếp Stylist phù hợp khi bạn xác nhận.';
+    else slotFeedback.textContent = 'Khung giờ màu xám đã có lịch hoặc đã qua.';
+  };
+  const loadAvailability = async () => {
+    busyIntervals = [];
+    startTimeInput.value = '';
+    if (stylistSelect.value === 'auto' || !appointmentDate.value) { slotFeedback.dataset.loading = '0'; renderSlots(); return; }
+    slotFeedback.textContent = 'Đang kiểm tra lịch của Stylist…'; slotFeedback.dataset.loading = '1';
+    slotGrid.replaceChildren();
+    try {
+      const url = new URL('{{ url_for("api_get_booked_slots") }}', window.location.origin);
+      url.searchParams.set('barber_id', stylistSelect.value); url.searchParams.set('date', appointmentDate.value);
+      const response = await fetch(url, {headers:{'Accept':'application/json'}, cache:'no-store'});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Không thể tải lịch Stylist.');
+      busyIntervals = result.busy_intervals || [];
+      slotFeedback.dataset.loading = '0'; renderSlots();
+    } catch (error) { slotFeedback.dataset.loading = '0'; slotFeedback.textContent = error.message; slotFeedback.classList.add('text-danger'); }
+  };
+  stylistSelect.addEventListener('change', () => {
+    document.querySelectorAll('[data-stylist-card]').forEach(card => card.classList.toggle('selected', card.dataset.stylistCard === stylistSelect.value));
+    loadAvailability();
+  });
+  appointmentDate.addEventListener('change', loadAvailability);
+  document.querySelectorAll('.service-checkbox').forEach(box => box.addEventListener('change', () => { if (stylistSelect.value !== 'auto' && appointmentDate.value) loadAvailability(); else renderSlots(); }));
+  document.querySelectorAll('[data-select-stylist]').forEach(button => button.addEventListener('click', () => { stylistSelect.value = button.dataset.selectStylist; stylistSelect.dispatchEvent(new Event('change')); }));
+  document.querySelectorAll('[data-stylist-profile]').forEach(button => button.addEventListener('click', () => {
+    const name = button.dataset.name || 'Stylist';
+    profileStylistId = button.dataset.stylistId;
+    document.getElementById('profile-name').textContent = name;
+    document.getElementById('profile-avatar').textContent = name.slice(0, 1).toUpperCase();
+    const years = Number(button.dataset.experience || 0);
+    const gender = {male:'Chuyên tóc nam', female:'Chuyên tóc nữ', both:'Chuyên tóc nam và nữ'}[button.dataset.gender] || 'Stylist';
+    document.getElementById('profile-meta').textContent = `${years} năm kinh nghiệm · ${gender}`;
+    document.getElementById('profile-rating').textContent = Number(button.dataset.rating || 0).toFixed(1);
+    document.getElementById('profile-review-count').textContent = new Intl.NumberFormat('vi-VN').format(Number(button.dataset.reviewCount || 0));
+    document.getElementById('profile-experience').textContent = `${years}+`;
+    document.getElementById('profile-customer-count').textContent = `${new Intl.NumberFormat('vi-VN').format(Number(button.dataset.totalCustomers || 0))}+`;
+    const badges = (button.dataset.specialties || '').split(',').map(item => item.trim()).filter(Boolean);
+    const container = document.getElementById('profile-specialties'); container.replaceChildren();
+    badges.forEach(item => { const badge = document.createElement('span'); badge.className = 'stylist-badge'; const lower = item.toLowerCase(); badge.textContent = `${lower.includes('nhuộm') || lower.includes('balayage') ? '🎨' : lower.includes('massage') ? '💆‍♂️' : '✂️'} ${item}`; container.appendChild(badge); });
+    document.getElementById('profile-awards').textContent = button.dataset.awards || 'Thành tích đang được cập nhật.';
+    document.getElementById('profile-philosophy').textContent = button.dataset.philosophy || 'Triết lý làm nghề đang được cập nhật.';
+    document.getElementById('profile-bio').textContent = button.dataset.bio || 'Thông tin giới thiệu đang được cập nhật.';
+    profileModal.show();
+  }));
+  document.getElementById('choose-profile-stylist').addEventListener('click', () => {
+    if (!profileStylistId) return;
+    stylistSelect.value = profileStylistId;
+    stylistSelect.dispatchEvent(new Event('change'));
+    profileModal.hide();
+  });
+  bookingForm.addEventListener('submit', event => {
+    if (!startTimeInput.value) { event.preventDefault(); slotFeedback.textContent = 'Vui lòng chọn một khung giờ còn trống.'; slotFeedback.classList.add('text-danger'); slotGrid.scrollIntoView({behavior:'smooth',block:'center'}); }
+  });
+  renderSlots();
+
+})();
+</script>
+{% endblock %}

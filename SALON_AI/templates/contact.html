@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block head_styles %}
+<style>
+  .contact-page{color:#28213b}.contact-hero{padding:26px 30px;border-radius:22px;color:#fff;background:linear-gradient(120deg,#4338ca,#7c3aed 58%,#be185d);box-shadow:0 14px 34px #5b21b622}.contact-card{height:100%;padding:24px;border:1px solid #eee8f7;border-radius:20px;background:#fff;box-shadow:0 12px 32px #312e810c}.contact-icon{display:grid;place-items:center;width:48px;height:48px;margin-bottom:15px;border-radius:15px;color:#6d28d9;background:#f1eafe;font-size:1.3rem}.contact-value{font-size:1.08rem;font-weight:700;color:#30264a}.contact-card a{text-decoration:none}.contact-card a:hover{text-decoration:underline}.support-note{height:100%;padding:23px;border-radius:20px;background:linear-gradient(140deg,#faf5ff,#fff7fb);border:1px solid #efe5fa}.support-note li+li{margin-top:12px}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="contact-page">
+  <header class="contact-hero mb-4">
+    <div class="small text-white-50 text-uppercase fw-semibold">HairStudio · Hỗ trợ khách hàng</div>
+    <h1 class="h3 mt-1 mb-1">Liên hệ hỗ trợ</h1>
+    <p class="mb-0 text-white-75">Đội ngũ HairStudio luôn sẵn sàng hỗ trợ lịch hẹn và dịch vụ của bạn.</p>
+  </header>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3"><section class="contact-card"><div class="contact-icon"><i class="bi bi-telephone"></i></div><div class="small text-secondary mb-1">Hotline / Zalo</div><div class="contact-value"><a href="tel:0901111111">0901111111</a></div><a class="btn btn-sm btn-primary rounded-pill mt-3 px-3" href="tel:0901111111">Gọi ngay</a></section></div>
+    <div class="col-sm-6 col-xl-3"><section class="contact-card"><div class="contact-icon"><i class="bi bi-envelope"></i></div><div class="small text-secondary mb-1">Email Admin</div><div class="contact-value"><a href="mailto:{{ admin_email }}">{{ admin_email }}</a></div><p class="small text-secondary mt-3 mb-0">Gửi yêu cầu hoặc góp ý cho salon.</p></section></div>
+    <div class="col-sm-6 col-xl-3"><section class="contact-card"><div class="contact-icon"><i class="bi bi-geo-alt"></i></div><div class="small text-secondary mb-1">Địa chỉ Salon</div><div class="contact-value">123 Đường Cầu Giấy, Hà Nội</div><p class="small text-secondary mt-3 mb-0">HairStudio hân hạnh đón tiếp bạn.</p></section></div>
+    <div class="col-sm-6 col-xl-3"><section class="contact-card"><div class="contact-icon"><i class="bi bi-clock"></i></div><div class="small text-secondary mb-1">Giờ mở cửa</div><div class="contact-value">08:00 – 20:30</div><p class="small text-secondary mt-3 mb-0">Tất cả các ngày trong tuần.</p></section></div>
+  </div>
+  <section class="support-note">
+    <h2 class="h5 mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Gợi ý &amp; Quy định hỗ trợ</h2>
+    <ul class="mb-0 ps-3">
+      <li><strong>Quy định hủy lịch đã thanh toán:</strong> Quý khách đã chuyển khoản vui lòng gọi Hotline trước ca làm 2 tiếng để được nhân viên hỗ trợ hoàn tiền/đổi lịch.</li>
+      <li><strong>Tư vấn dịch vụ:</strong> Có thể chat nhanh với Trợ lý AI ở góc dưới bên trái màn hình.</li>
+    </ul>
+  </section>
+</main>
+{% endblock %}
