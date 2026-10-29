@@ -97,11 +97,13 @@ def get_connection():
 def seed():
     conn = get_connection()
     try:
+        conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('users', 'barbers', 'customers', 'appointments')")
         accounts = [
-            ("admin", "Quản trị viên", None, "admin", "admin@hairstudio.vn"),
-            ("le_tan", "Lê Tân", None, "staff", None),
-            ("tho01", "Nguyễn Văn b", "0901000001", "stylist", None),
-            ("tho02", "Trần Thị E", "0901000002", "stylist", None),
+            ("admin", "Trần Quang Trường", "0901111111", "admin", "admin.hairstudio@gmail.com"),
+            ("letan01", "Lê Tân", "0377463225", "staff", "letan@gmail.com"),
+            ("letan02", "Lê Tân 02", "0111122222", "staff", "letan02@gmail.com"),
+            ("tho01", "Trần Quốc Tuấn", "0288888888", "stylist", "tuan01@gmail.com"),
+            ("tho02", "Đỗ Hoàng Yến", "0388888888", "stylist", "hoangyen02@gmail.com"),
             ("khach01", "Lê Văn C", "0912345678", "customer", None),
             ("khach02", "Phạm Thị Hoàng", "0987654321", "customer", None),
         ]
@@ -118,10 +120,15 @@ def seed():
                      email = COALESCE(excluded.email, users.email)""",
                 (username, password_hash, full_name, phone, role, email),
             )
+            if role != "customer":
+                conn.execute(
+                    "UPDATE users SET phone=?, full_name=? WHERE username=?",
+                    (phone, full_name, username),
+                )
 
         stylist_accounts = [
-            ("tho01", "Nguyễn Văn b", "0901000001", "Cắt tạo kiểu", "6 năm"),
-            ("tho02", "Trần Thị Hair", "0901000002", "Nhuộm và tạo kiểu", "5 năm"),
+            ("tho01", "Trần Quốc Tuấn", "0288888888", "Cắt tạo kiểu", "6 năm"),
+            ("tho02", "Đỗ Hoàng Yến", "0388888888", "Nhuộm và tạo kiểu", "5 năm"),
         ]
         stylist_ids = {}
         for username, full_name, phone, specialty, experience in stylist_accounts:
@@ -134,15 +141,15 @@ def seed():
             if barber:
                 barber_id = barber[0]
                 conn.execute(
-                    """UPDATE barbers SET full_name = ?, phone = ?, specialty = ?,
+                    """UPDATE barbers SET full_name = ?, specialty = ?,
                        experience = ?, status = 'active' WHERE id = ?""",
-                    (full_name, phone, specialty, experience, barber_id),
+                    (full_name, specialty, experience, barber_id),
                 )
             else:
                 conn.execute(
-                    """INSERT INTO barbers(full_name, phone, specialty, experience, status, user_id)
-                       VALUES (?, ?, ?, ?, 'active', ?)""",
-                    (full_name, phone, specialty, experience, user_id),
+                    """INSERT INTO barbers(full_name, specialty, experience, status, user_id)
+                       VALUES (?, ?, ?, 'active', ?)""",
+                    (full_name, specialty, experience, user_id),
                 )
                 barber_id = conn.execute(
                     "SELECT id FROM barbers WHERE user_id = ?", (user_id,)
@@ -238,11 +245,14 @@ def seed():
                      start_time, end_time, status, marker),
                 )
                 appointment_id = cursor.lastrowid
-            price = next(item[4] for item in services if item[0] == service_name)
+            price = next((item[4] for item in services if item[0] == service_name), 100000)
+            service_id = service_ids.get(service_name)
+            if not service_id and service_ids:
+                service_id = list(service_ids.values())[0]
             conn.execute(
                 """INSERT INTO appointment_services(appointment_id, service_id, quantity, price)
                    VALUES (?, ?, 1, ?)""",
-                (appointment_id, service_ids[service_name], price),
+                (appointment_id, service_id, price),
             )
 
         conn.commit()

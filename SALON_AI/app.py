@@ -1120,19 +1120,19 @@ def admin_accounts():
             """SELECT u.id, u.username, u.full_name, u.phone, u.email, u.role, u.is_active,
                       CASE
                         WHEN u.role = 'customer' THEN COALESCE(c.customer_code, 'KH' || printf('%03d', c.id))
-                        WHEN u.role = 'admin' THEN '#NV' || printf('%02d',
-                          (SELECT COUNT(*) FROM users x WHERE x.role='admin' AND x.id <= u.id))
+                        WHEN u.role = 'admin' THEN '#AD' || printf('%02d',
+                          (SELECT COUNT(*) FROM users x WHERE x.role='admin' AND x.username <= u.username))
                         WHEN u.role IN ('receptionist','staff') THEN '#LT' || printf('%02d',
-                          (SELECT COUNT(*) FROM users x WHERE x.role IN ('receptionist','staff') AND x.id <= u.id))
+                          (SELECT COUNT(*) FROM users x WHERE x.role IN ('receptionist','staff') AND x.username <= u.username))
                         WHEN u.role = 'stylist' THEN '#ST' || printf('%02d',
-                          (SELECT COUNT(*) FROM users x WHERE x.role='stylist' AND x.id <= u.id))
+                          (SELECT COUNT(*) FROM users x WHERE x.role='stylist' AND x.username <= u.username))
                         ELSE '#' || u.id END AS display_code,
                       CASE WHEN u.role='customer' THEN c.id ELSE NULL END AS customer_id
                FROM users u
                LEFT JOIN customers c ON c.phone = u.phone AND u.role = 'customer'
                ORDER BY CASE u.role WHEN 'admin' THEN 0 WHEN 'receptionist' THEN 1
                                     WHEN 'staff' THEN 2 WHEN 'stylist' THEN 3 ELSE 4 END,
-                        u.id"""
+                        u.username ASC"""
         ).fetchall()]
     finally:
         conn.close()

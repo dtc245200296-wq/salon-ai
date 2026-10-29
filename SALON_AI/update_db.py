@@ -58,24 +58,28 @@ def main():
         conn.execute("DELETE FROM appointments")
         conn.execute("DELETE FROM customers")
         conn.execute("DELETE FROM users WHERE role = 'customer'")
-        conn.execute("UPDATE sqlite_sequence SET seq = 0 WHERE name IN ('customers', 'appointments', 'invoices')")
+        conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('users', 'barbers', 'customers', 'appointments')")
 
         # Normalize all staff contact details to a dedicated, non-customer range.
         staff = [
-            ("admin", "Trần Quang Trường", "0901111111", "admin@hairstudio.com", "admin"),
-            ("letan01", "Lê Tân 01", "0111111111", "letan01@gmail.com", "receptionist"),
-            ("letan02", "Lê Tân 02", "0111122222", "letan02@gmail.com", "receptionist"),
-            ("tho01", "Trần Quốc Tuấn", "0111133333", "tuan01@gmail.com", "stylist"),
-            ("tho02", "Đỗ Hoàng Yến", "0111144444", "hoangyen02@gmail.com", "stylist"),
+            ("admin", "Trần Quang Trường", "0901111111", "admin.hairstudio@gmail.com", "admin"),
+            ("letan01", "Lê Tân", "0377463225", "letan@gmail.com", "staff"),
+            ("letan02", "Lê Tân 02", "0111122222", "letan02@gmail.com", "staff"),
+            ("tho01", "Trần Quốc Tuấn", "0288888888", "tuan01@gmail.com", "stylist"),
+            ("tho02", "Đỗ Hoàng Yến", "0388888888", "hoangyen02@gmail.com", "stylist"),
         ]
         for username, full_name, phone, email, role in staff:
             conn.execute(
-                "UPDATE users SET full_name=?, phone=?, email=?, role=? WHERE username=?",
-                (full_name, phone, email, role, username),
+                "UPDATE users SET phone=?, full_name=? WHERE username=?",
+                (phone, full_name, username),
             )
             conn.execute(
-                "UPDATE barbers SET full_name=?, phone=? WHERE user_id=(SELECT id FROM users WHERE username=?)",
-                (full_name, phone, username),
+                "UPDATE users SET email=?, role=? WHERE username=?",
+                (email, role, username),
+            )
+            conn.execute(
+                "UPDATE barbers SET full_name=? WHERE user_id=(SELECT id FROM users WHERE username=?)",
+                (full_name, username),
             )
 
         password_hash = generate_password_hash("123456")

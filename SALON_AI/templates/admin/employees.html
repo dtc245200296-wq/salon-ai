@@ -40,8 +40,12 @@
     <tbody id="employee-table-body">
       {% for employee in employees %}
         {% set role_labels = {'admin': 'Chủ salon / Admin', 'receptionist': 'Lễ tân', 'staff': 'Lễ tân', 'stylist': 'Thợ cắt tóc'} %}
+        {% set role_prefix = 'AD' if employee.role == 'admin' else ('LT' if employee.role in ['receptionist', 'staff'] else ('ST' if employee.role == 'stylist' else '')) %}
+        {% set role_group = 'frontdesk' if employee.role in ['receptionist', 'staff'] else employee.role %}
+        {% set rank = namespace(value=1) %}
+        {% for other in employees %}{% set other_group = 'frontdesk' if other.role in ['receptionist', 'staff'] else other.role %}{% if other_group == role_group and other.username < employee.username %}{% set rank.value = rank.value + 1 %}{% endif %}{% endfor %}
         <tr data-role="{{ 'receptionist' if employee.role in ['receptionist','staff'] else employee.role }}">
-          <td><span class="badge rounded-pill bg-light text-dark border">#{{ employee.id }}</span></td><td><div class="d-flex align-items-center gap-2"><span class="employee-avatar">{{ (employee.full_name or employee.username)[:1]|upper }}</span><div><strong>{{ employee.full_name }}</strong><div class="small text-secondary">{{ employee.username }}</div></div></div></td>
+          <td><span class="badge rounded-pill bg-light text-dark border">{{ ('#' ~ role_prefix ~ '%02d'|format(rank.value)) if role_prefix else ('#' ~ employee.id) }}</span></td><td><div class="d-flex align-items-center gap-2"><span class="employee-avatar">{{ (employee.full_name or employee.username)[:1]|upper }}</span><div><strong>{{ employee.full_name }}</strong><div class="small text-secondary">{{ employee.username }}</div></div></div></td>
           <td><span class="badge rounded-pill {% if employee.role == 'stylist' %}text-bg-primary{% elif employee.role in ['receptionist','staff'] %}text-bg-info{% else %}text-bg-dark{% endif %}">{{ 'Barber / Stylist' if employee.role == 'stylist' else role_labels.get(employee.role, employee.role) }}</span></td><td><div>{{ employee.phone or '—' }}</div><small class="text-secondary">{{ employee.email or '—' }}</small></td><td>{{ (employee.experience_years|string + ' năm') if employee.role == 'stylist' else '—' }}</td><td>{{ employee.specialty or employee.specialties or '—' }}</td>
           <td>{% if employee.is_active %}<span class="badge rounded-pill text-bg-success">Hoạt động</span>{% else %}<span class="badge rounded-pill text-bg-secondary">Tạm khóa</span>{% endif %}</td>
           <td class="text-end text-nowrap">
